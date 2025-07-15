@@ -1,749 +1,1298 @@
-document.addEventListener('DOMContentLoaded', () => {
-  // Campos personalización CBU
-  const titular = document.getElementById('titularCuenta');
-  const cbu = document.getElementById('cbuCuenta');
-  const alias = document.getElementById('aliasCuenta');
-  const botonEditarGuardar = document.getElementById('editarGuardarDatos');
-  const iconoEditarGuardar = document.getElementById('iconoEditarGuardar');
-  const toast = document.getElementById('toastMensaje');
+// Configuración Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyCu6SyJj6xF4ZFHwV34zVtT7kSWUU0Gjds",
+  authDomain: "gestorcasino-1405c.firebaseapp.com",
+  databaseURL: "https://gestorcasino-1405c-default-rtdb.firebaseio.com",
+  projectId: "gestorcasino-1405c",
+  storageBucket: "gestorcasino-1405c.firebasestorage.app",
+  messagingSenderId: "544923157042",
+  appId: "1:544923157042:web:7d3a4530a2c4880bb8b22b"
+};
 
-  // Campos usuario nuevo
-  const inputNombre = document.getElementById('nombreUsuario');
-  const botonAgregar = document.getElementById('btnAgregarUsuario');
-  const botonLimpiar = document.getElementById('btnLimpiar');
-  const inputUsuarioGenerado = document.getElementById('usuarioGenerado');
-  const inputContrasenaGenerada = document.getElementById('contrasenaGenerada');
-  const textareaMensajeGenerado = document.getElementById('mensajeGenerado');
-  const contadorUsuariosSpan = document.getElementById('contadorUsuarios');
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const usuariosRef = database.ref('usuarios');
+const cargasRef = database.ref('cargas');
+const retirosRef = database.ref('retiros');
 
-  // Botones info y bienvenida
-  const botonInfoUsuariosNuevos = document.getElementById('btnInfoUsuarioNuevo');
-  const btnMensajeBienvenida = document.getElementById('btnMensajeBienvenida');
+function mostrarNotificacion(mensaje, tipo = "success") {
+  const notificacion = document.getElementById('notificacion');
+  notificacion.textContent = mensaje;
+  notificacion.className = `fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg transition-all duration-300 ${
+    tipo === "error" ? "bg-red-500" : "bg-green-500"
+  } text-white`;
 
-  // Mensajes
-  const mensajesBienvenida = [
-    "¡Hey! Bienvenido/a 🎰 Decime tu nombre completo asi te armo el usuario y clave para que arranques a jugar 🍀🔥",
-    "¡Hola! Bienvenido/a 😊 ¿Me podés pasar tu nombre completo para crear tu usuario y contraseña?"
-  ];
+  notificacion.classList.remove('hidden', 'opacity-0');
+  notificacion.classList.add('opacity-100');
 
-  const mensajes = [
-    `Te recuerdo que la carga mínima es: $1500\nRetiro mínimo: $3000\n🌐 Sitio web: https://ganamos.biz/home\n\nCargamos y retiramos las 24hs  del día los 7 días de la semana al instante!`,
-    `📢 Te cuento que el mínimo para cargar es de $1500 y para retirar $3000.\n🌐 Sitio web: https://ganamos.biz/home\n\n💸 Trabajamos 24/7 con cargas y retiros instantáneos 🎲🔥\n\n¿Podés acceder? Así te paso el CBU 📲`,
-    `👉 El monto mínimo de carga es $1500 y el de retiro $3000\n\n🌐 Ingresá desde: https://ganamos.biz/home\n\n💳 Hacemos cargas y retiros todos los días, a toda hora 🚀\n\nAvisame si pudiste entrar así te paso los datos del CBU ✅`
-  ];
-
-  const mensajesInfoUsuariosNuevos = [
-    `Hola como estas? Genial que quieras jugar! 🎰🤩
-Primero te creamos tu usuario y contraseña para ingresar a https://ganamos.biz/home
-
-👉 Una vez dentro, para cargar fichas solo necesitás hacer una transferencia bancaria, yo te paso el CBU.
-Podés cargar el monto que quieras.
-
-💵 Mínimo de carga: $1500
-💵 Mínimo de retiro: $3000
-
-📤 Los retiros de premios también se hacen por CBU.
-
-📆 Estamos activos las 24hs todos los días para que juegues cuando quieras 😄
-Cualquier duda que tengas podes  consultar sin problema 🙌`,
-
-    `¡Hola! Te explico cómo podes jugar 🎉
-✅ Primero creamos tu usuario y clave para entrar a https://ganamos.biz/home
-
-💳 Para cargar fichas, hacés una transferencia al CBU que te paso, y acreditamos el saldo.
-
-💲Mínimo para cargar: $1500
-💲Mínimo para retirar: $3000
-
-🏦 Los retiros también son por transferencia a tu CBU.
-
-⏰ Atendemos 24/7 todos los días del año.
-Cualquier duda que tengas, estoy para ayudarte 💬`,
-
-    `🎉 ¡Bienvenido/a! Te explico
-
-Primero te creo tu usuario y contraseña para que puedas ingresar a nuestra plataforma: https://ganamos.biz/home
-
-💸 Para cargar fichas, hacés una transferencia y te paso el CBU. Una vez que confirmás, se acredita.
-
-📌 Mínimo de carga: $1500
-📌 Mínimo de retiro: $3000
-
-✅ Los premios se retiran por transferencia también.
-
-🕐 Estamos siempre disponibles, las 24hs los 7 días 🙌
-¿Tenés alguna pregunta? Estoy acá para ayudarte 😃`
-  ];
-
-  // 🎯 Botón "Unirse al grupo"
-const btnUnirseGrupo = Array.from(document.querySelectorAll('.btn-warning')).find(
-  btn => btn.textContent.trim() === "Unirse al grupo"
-);
-
-const mensajesUnirseGrupo = [
-  `¡Hola! 😊 A partir de ahora, todas las cargas y retiros se hacen desde un grupo privado.
-Te paso el link para que te unas 🔒
-En ese grupo está el equipo listo para ayudarte con lo que necesites.
-Es exclusivo, solo para vos.
-Una vez que entres, solo avisá si querés cargar o retirar. ¡Gracias! 🎰💖`,
-
-  `¿Qué tal? 👋 Desde ahora, los retiros y cargas se gestionan en un grupo privado.
-Te paso el link para entrar 👉
-Ahí vas a encontrar al equipo que te asiste las 24hs.
-⚠️ El grupo es solo para vos, nadie más lo ve.
-Cuando entres, escribime si querés retirar o cargar, ¡así te ayudamos rápido!`,
-
-  `¡Ey! 🎲 Para todo lo que sea cargas o retiros, ahora lo manejamos por un grupo privado.
-Te paso el link para sumarte 🔗
-Ahí está el equipo que te va a dar una mano siempre que necesites.
-Es un grupo exclusivo para vos, tranqui que no hay nadie más.
-Una vez que estés adentro, mandá si querés retirar o cargar 💸🙌`
-];
-
-let ultimoMensajeUnirse = null;
-
-if (btnUnirseGrupo) {
-  btnUnirseGrupo.addEventListener('click', () => {
-    let mensajeNuevo;
-    do {
-      mensajeNuevo = mensajesUnirseGrupo[Math.floor(Math.random() * mensajesUnirseGrupo.length)];
-    } while (mensajeNuevo === ultimoMensajeUnirse && mensajesUnirseGrupo.length > 1);
-
-    ultimoMensajeUnirse = mensajeNuevo;
-
-    navigator.clipboard.writeText(mensajeNuevo).then(() => {
-      mostrarToast('✅ Mensaje para unirse al grupo copiado.');
-    }).catch(() => {
-      mostrarToast('❌ Error al copiar el mensaje.', false);
-    });
-  });
+  setTimeout(() => {
+    notificacion.classList.add('opacity-0');
+    setTimeout(() => notificacion.classList.add('hidden'), 300);
+  }, 3000);
 }
 
-  // ➕ Guardar usuario en la nube al generarlo
-  async function guardarUsuarioEnNube(usuario) {
-    try {
-      const response = await fetch('https://script.google.com/macros/s/AKfycbxOe71akD9J_wacRP7Yxkf3i9i456ydUq9Ctn93vv_Pv4oQHIb-vTYAK_4sBTFMZ6gO/exec', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ usuario })
-      });
+// Variables globales para manejo de bonificación
+let montoBase = null;
+let porcentajeBonificacion = 0;
 
-      const resultado = await response.json();
-      return resultado.guardado === true;
-    } catch (error) {
-      console.error('Error al guardar usuario en la nube:', error);
+// Limpia inputs de usuario y monto
+function limpiarFormularioCarga() {
+  document.getElementById('usuario-carga').value = '';
+  document.getElementById('monto').value = '';
+}
+
+// Registrar carga solo si usuario existe
+async function registrarCarga() {
+  const usuario = document.getElementById('usuario-carga').value.trim();
+  const montoStr = document.getElementById('monto').value.trim();
+  const monto = parseFloat(montoStr);
+
+  if (!usuario) {
+    mostrarNotificacion("Debe ingresar un nombre de usuario", "error");
+    return;
+  }
+  if (isNaN(monto) || monto <= 0) {
+    mostrarNotificacion("Monto inválido", "error");
+    return;
+  }
+
+  try {
+    const snapshot = await usuariosRef
+      .orderByChild('usuario')
+      .equalTo(usuario)
+      .once('value');
+
+    if (!snapshot.exists()) {
+      mostrarNotificacion("El usuario no existe en la base de datos", "error");
+      return;
+    }
+
+    await cargasRef.push({
+      usuario: usuario,
+      monto: monto,
+      montoBase: montoBase !== null ? montoBase : monto,
+      porcentajeBonificacion: porcentajeBonificacion,
+      timestamp: Date.now(),
+      fecha: new Date().toLocaleString("es-AR")
+    });
+
+    mostrarNotificacion("Carga registrada correctamente");
+    limpiarFormularioCarga();
+
+    // Resetear variables de bonificación después de guardar
+    montoBase = null;
+    porcentajeBonificacion = 0;
+
+  } catch (error) {
+    console.error("Error al guardar la carga:", error);
+    mostrarNotificacion("Error al guardar en la base de datos", "error");
+  }
+}
+
+// Registrar retiro solo si usuario existe
+async function registrarRetiro() {
+  const usuario = document.getElementById('usuario-carga').value.trim();
+  const montoStr = document.getElementById('monto').value.trim();
+  const monto = parseFloat(montoStr);
+
+  if (!usuario) {
+    mostrarNotificacion("Debe ingresar un nombre de usuario para retiro", "error");
+    return;
+  }
+  if (isNaN(monto) || monto <= 0) {
+    mostrarNotificacion("Monto inválido para retiro", "error");
+    return;
+  }
+
+  try {
+    const snapshot = await usuariosRef
+      .orderByChild('usuario')
+      .equalTo(usuario)
+      .once('value');
+
+    if (!snapshot.exists()) {
+      mostrarNotificacion("El usuario no existe en la base de datos", "error");
+      return;
+    }
+
+    await retirosRef.push({
+      usuario: usuario,
+      monto: monto,
+      timestamp: Date.now(),
+      fecha: new Date().toLocaleString("es-AR")
+    });
+
+    mostrarNotificacion("Retiro registrado correctamente");
+    limpiarFormularioCarga();
+
+  } catch (error) {
+    console.error("Error al guardar el retiro:", error);
+    mostrarNotificacion("Error al guardar retiro en la base de datos", "error");
+  }
+}
+
+// Copiar al portapapeles
+async function copiarAlPortapapeles(texto) {
+  try {
+    await navigator.clipboard.writeText(texto);
+    return true;
+  } catch (err) {
+    console.error('Error al copiar:', err);
+
+    try {
+      const input = document.createElement('input');
+      input.value = texto;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      return true;
+    } catch (fallbackErr) {
+      console.error('Error en fallback de copiado:', fallbackErr);
+      mostrarNotificacion(`No se pudo copiar al portapapeles`, "error");
       return false;
     }
   }
+}
 
-  // Modificamos el evento de botón agregar usuario para incluir la lógica de guardado
-  botonAgregar.addEventListener('click', async () => {
-    const nombre = inputNombre.value;
-    if (!validarNombre(nombre)) {
-      mostrarToast('❌ Nombre inválido. Solo letras y mínimo 3 caracteres.', false);
+// Textos rotativos no repetitivos
+const textosInfo = [
+  `👉 El monto mínimo de carga es $1500 y el de retiro $3000
+
+🌐 Ingresá desde: https://ganamos.bet/home
+
+💳 Hacemos cargas y retiros todos los días, a toda hora 🚀
+
+Avisame si pudiste entrar así te paso los datos del CBU ✅`,
+
+  `Te recuerdo que la carga mínima es: $1500
+Retiro mínimo: $3000
+🌐 Sitio web: https://ganamos.bet/home
+
+Cargamos y retiramos las 24hs del día los 7 días de la semana al instante!`,
+
+  `📢 Te cuento que el mínimo para cargar es de $1500 y para retirar $3000.
+🌐 Sitio web: https://ganamos.biz/home
+
+💸 Trabajamos 24/7 con cargas y retiros instantáneos 🎲🔥
+
+¿Podés acceder? Así te paso el CBU 📲`
+];
+
+let ultimoTexto = null;
+function obtenerTextoAleatorio() {
+  let texto;
+  do {
+    texto = textosInfo[Math.floor(Math.random() * textosInfo.length)];
+  } while (texto === ultimoTexto);
+  ultimoTexto = texto;
+  return texto;
+}
+
+// Generar usuario único
+async function generarUsuarioUnico(nombre) {
+  if (!database) throw new Error("No hay conexión a la base de datos");
+
+  const nombreLimpio = nombre
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase()
+    .substring(0, 12);
+
+  for (let intentos = 0; intentos < 5; intentos++) {
+    const numeroAleatorio = Math.floor(Math.random() * 90) + 10;
+    const usuarioGenerado = `B1${nombreLimpio}${numeroAleatorio}`;
+
+    try {
+      const snapshot = await usuariosRef
+        .orderByChild('usuario')
+        .equalTo(usuarioGenerado)
+        .once('value');
+
+      if (!snapshot.exists()) return usuarioGenerado;
+    } catch (error) {
+      console.error("Error al verificar usuario:", error);
+      throw new Error("Error al verificar usuario existente");
+    }
+  }
+
+  throw new Error('No se pudo generar un usuario único. Intente con un nombre diferente');
+}
+
+// Crear usuario
+async function crearUsuario() {
+  const crearUsuarioBtn = document.getElementById('crear-usuario');
+  const usuarioInput = document.getElementById('usuario-input');
+  const nombre = usuarioInput.value.trim();
+
+  if (!nombre) {
+    mostrarNotificacion("Por favor ingrese un nombre para el usuario", "error");
+    usuarioInput.focus();
+    return;
+  }
+
+  if (nombre.length > 14) {
+    mostrarNotificacion("Máximo 14 caracteres para el nombre", "error");
+    return;
+  }
+
+  crearUsuarioBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i> Creando...';
+  crearUsuarioBtn.disabled = true;
+
+  try {
+    const usuarioGenerado = await generarUsuarioUnico(nombre);
+    const clave = "hola123";
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Tiempo de espera agotado")), 8000)
+    );
+
+    await Promise.race([
+      usuariosRef.push().set({
+        usuario: usuarioGenerado,
+        nombreOriginal: nombre,
+        clave: clave,
+        fechaCreacion: firebase.database.ServerValue.TIMESTAMP,
+        saldo: 0,
+        estado: 'activo'
+      }),
+      timeoutPromise
+    ]);
+
+    const mensajeFinal = `Usuario: ${usuarioGenerado}
+Clave: ${clave}
+
+${obtenerTextoAleatorio()}`;
+
+    usuarioInput.value = usuarioGenerado;
+    await copiarAlPortapapeles(mensajeFinal);
+    mostrarNotificacion("Usuario creado correctamente");
+
+  } catch (error) {
+    console.error('Error en el proceso:', error);
+
+    let mensajeError = "Error al crear usuario";
+    if (error.message.includes("permission_denied")) {
+      mensajeError = "Error: Permisos insuficientes en la base de datos";
+    } else if (error.message.includes("Tiempo de espera")) {
+      mensajeError = "Error: Tiempo de conexión agotado";
+    } else {
+      mensajeError = error.message;
+    }
+
+    mostrarNotificacion(mensajeError, "error");
+  } finally {
+    crearUsuarioBtn.innerHTML = '<i class="fas fa-user-plus text-xs"></i> Crear';
+    crearUsuarioBtn.disabled = false;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('crear-usuario').addEventListener('click', crearUsuario);
+  document.getElementById('usuario-input').addEventListener('keypress', e => {
+    if (e.key === 'Enter') crearUsuario();
+  });
+
+  document.getElementById('btn-cargar').addEventListener('click', registrarCarga);
+  document.getElementById('btn-bajar').addEventListener('click', registrarRetiro);
+
+  // Botón Reestablecer - Comportamiento modificado
+  document.getElementById('btn-reestablecer').addEventListener('click', async () => {
+    const inputUsuario = document.getElementById('usuario-input');
+    const usuario = inputUsuario.value.trim();
+
+    if (!usuario) {
+      mostrarNotificacion("Ingrese un usuario para reestablecer", "error");
       return;
     }
 
-    const usuario = generarUsuario(nombre);
-    const contrasena = 'hola1234';
-    const mensajeExtra = mensajes[Math.floor(Math.random() * mensajes.length)];
-    const textoACopiar = `Usuario: ${usuario}\nClave: ${contrasena}\n\n${mensajeExtra}`;
+    try {
+      const snapshot = await usuariosRef.orderByChild('usuario').equalTo(usuario).once('value');
 
-    const guardadoExitoso = await guardarUsuarioEnNube(usuario);
-    if (!guardadoExitoso) {
-      mostrarToast('⚠️ Ese usuario ya existe o no se pudo guardar.', false);
-      return;
+      if (!snapshot.exists()) {
+        mostrarNotificacion("El usuario no existe en la base de datos", "error");
+        return;
+      }
+
+      const mensaje = `Usuario reestablecido\nUsuario: ${usuario}\nClave: hola123\nIngresa nuevamente`;
+
+      await copiarAlPortapapeles(mensaje);
+      mostrarNotificacion("Credenciales copiadas al portapapeles ✔️");
+
+    } catch (error) {
+      console.error("Error al reestablecer usuario:", error);
+      mostrarNotificacion("Error al procesar la solicitud", "error");
     }
+  });
 
-    navigator.clipboard.writeText(textoACopiar).then(() => {
-      mostrarToast('✅ Mensaje copiado al portapapeles.');
-      inputUsuarioGenerado.value = usuario;
-      inputContrasenaGenerada.value = contrasena;
-      textareaMensajeGenerado.value = textoACopiar;
+  // Funcionalidad de desbloqueo
+  const btnDesbloquear = document.getElementById('btn-desbloquear');
+  if (btnDesbloquear) {
+    btnDesbloquear.addEventListener('click', async () => {
+      const inputUsuario = document.getElementById('usuario-input');
+      const usuario = inputUsuario.value.trim();
 
-      usuariosGenerados++;
-      contadorUsuariosSpan.textContent = usuariosGenerados;
+      if (!usuario) {
+        mostrarNotificacion("Debe ingresar un usuario para desbloquear", "error");
+        return;
+      }
 
-      inputNombre.value = '';
-      botonAgregar.setAttribute('disabled', true);
-    }).catch(() => {
-      mostrarToast('❌ Error al copiar al portapapeles.', false);
+      try {
+        const snapshot = await usuariosRef.orderByChild('usuario').equalTo(usuario).once('value');
+
+        if (!snapshot.exists()) {
+          mostrarNotificacion("El usuario no existe en la base de datos", "error");
+          return;
+        }
+
+        const ahora = new Date().toLocaleString("es-AR");
+        const mensaje = `${usuario}, tu usuario fue desbloqueado. Intenta nuevamente ✅\n(${ahora})`;
+
+        await copiarAlPortapapeles(mensaje);
+        mostrarNotificacion("Mensaje de desbloqueo copiado al portapapeles");
+
+      } catch (error) {
+        console.error("Error al buscar usuario:", error);
+        mostrarNotificacion("Error al buscar usuario", "error");
+      }
+    });
+  }
+
+  // Bonificación dropdown
+  const btnBonif = document.getElementById('btn-bonif');
+  const panelBonif = document.getElementById('panel-bonif');
+  const inputMonto = document.getElementById('monto');
+
+  btnBonif.addEventListener('click', () => {
+    if (panelBonif.classList.contains('hidden')) {
+      const val = parseFloat(inputMonto.value);
+      if (isNaN(val) || val <= 0) {
+        mostrarNotificacion("Ingrese un monto válido antes de aplicar bonificación", "error");
+        return;
+      }
+      montoBase = val;
+      panelBonif.classList.remove('hidden');
+    } else {
+      panelBonif.classList.add('hidden');
+      if (montoBase !== null) {
+        inputMonto.value = montoBase.toFixed(2);
+      }
+      limpiarFormularioCarga();
+      montoBase = null;
+      porcentajeBonificacion = 0;
+    }
+  });
+
+  panelBonif.querySelectorAll('.bonif-option').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const porcentaje = parseFloat(btn.getAttribute('data-porcentaje'));
+      if (montoBase === null) return;
+
+      const usuario = document.getElementById('usuario-carga').value.trim();
+      if (!usuario) {
+        mostrarNotificacion("Debe ingresar un usuario antes de aplicar bonificación", "error");
+        return;
+      }
+
+      try {
+        const snapshot = await usuariosRef
+          .orderByChild('usuario')
+          .equalTo(usuario)
+          .once('value');
+
+        if (!snapshot.exists()) {
+          mostrarNotificacion("El usuario no existe en la base de datos", "error");
+          return;
+        }
+
+        porcentajeBonificacion = porcentaje;
+        const nuevoMonto = montoBase * (1 + porcentaje / 100);
+        inputMonto.value = nuevoMonto.toFixed(2);
+
+        mostrarNotificacion(`Bonificación aplicada: ${porcentaje}%`);
+        panelBonif.classList.add('hidden');
+
+      } catch (error) {
+        console.error("Error al verificar usuario para bonificación:", error);
+        mostrarNotificacion("Error al verificar usuario", "error");
+      }
     });
   });
 
+  // Modal historial general
+  const btnHistorial = document.getElementById('btn-historial');
+  const modalHistorial = document.getElementById('modal-historial');
+  const cerrarModalBtn = document.getElementById('cerrar-modal');
+  const contenidoHistorial = document.getElementById('contenido-historial');
+
+  btnHistorial.addEventListener('click', async () => {
+    contenidoHistorial.innerHTML = 'Cargando historial...';
+
+    try {
+      const ahora = Date.now();
+      const cincoHorasAntes = ahora - 5 * 60 * 60 * 1000;
+
+      const cargasSnap = await cargasRef
+        .orderByChild('timestamp')
+        .startAt(cincoHorasAntes)
+        .once('value');
+
+      const retirosSnap = await retirosRef
+        .orderByChild('timestamp')
+        .startAt(cincoHorasAntes)
+        .once('value');
+
+      const cargas = cargasSnap.exists() ? cargasSnap.val() : {};
+      const retiros = retirosSnap.exists() ? retirosSnap.val() : {};
+
+      const eventos = [];
+
+      for (const key in cargas) {
+        eventos.push({
+          tipo: 'carga',
+          usuario: cargas[key].usuario,
+          monto: cargas[key].monto,
+          montoBase: cargas[key].montoBase,
+          porcentajeBonificacion: cargas[key].porcentajeBonificacion,
+          fecha: cargas[key].fecha,
+          timestamp: cargas[key].timestamp
+        });
+      }
+
+      for (const key in retiros) {
+        eventos.push({
+          tipo: 'retiro',
+          usuario: retiros[key].usuario,
+          monto: retiros[key].monto,
+          fecha: retiros[key].fecha,
+          timestamp: retiros[key].timestamp
+        });
+      }
+
+      eventos.sort((a, b) => b.timestamp - a.timestamp);
+
+      if (eventos.length === 0) {
+        contenidoHistorial.innerHTML = '<p class="text-center text-gray-600">No hay movimientos en las últimas 5 horas.</p>';
+      } else {
+        contenidoHistorial.innerHTML = '';
+
+        eventos.forEach(ev => {
+          const div = document.createElement('div');
+          div.className = `p-2 rounded mb-1 text-sm ${
+            ev.tipo === 'carga' ? (Number(ev.porcentajeBonificacion) > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800') : 'bg-red-100 text-red-800'
+          }`;
+
+          let infoBonif = '';
+          if (ev.tipo === 'carga' && Number(ev.porcentajeBonificacion) > 0) {
+            const base = Number(ev.montoBase);
+            infoBonif = `<br><em>Bonificación: ${Number(ev.porcentajeBonificacion)}% (Base: $${isNaN(base) ? ev.montoBase : base.toFixed(2)})</em>`;
+          }
+
+          div.innerHTML = `<strong>${ev.tipo === 'carga' ? 'Carga' : 'Retiro'}</strong> — Usuario: <span class="font-mono">${ev.usuario}</span><br>
+          Monto: $${Number(ev.monto).toFixed(2)}${infoBonif}<br>
+          Fecha: ${ev.fecha}`;
+
+          contenidoHistorial.appendChild(div);
+        });
+      }
+    } catch (error) {
+      console.error("Error cargando historial:", error);
+      contenidoHistorial.innerHTML = `<p class="text-center text-red-600">Error cargando historial</p>`;
+    }
+
+    modalHistorial.classList.remove('hidden');
+  });
+
+  cerrarModalBtn.addEventListener('click', () => {
+    modalHistorial.classList.add('hidden');
+  });
+
+  modalHistorial.addEventListener('click', (e) => {
+    if (e.target === modalHistorial) {
+      modalHistorial.classList.add('hidden');
+    }
+  });
 
 
-// 📞 Botón "Contactanos por el grupo"
-const btnContactanosGrupo = Array.from(document.querySelectorAll('.btn-warning')).find(
-  btn => btn.textContent.trim() === "Contactanos por el grupo"
-);
+  // Nuevo: Modal historial para usuario específico
+  const btnHistorialUsuario = document.getElementById('btn-historial-usuario');
+  const modalHistorialUsuario = document.getElementById('modal-historial-usuario');
+  const cerrarModalUsuarioBtn = document.getElementById('cerrar-modal-usuario');
+  const contenidoHistorialUsuario = document.getElementById('contenido-historial-usuario');
 
-const mensajesContactanosGrupo = [
-  `¡Hola! 😊 ¿Cómo estás?
-Te pido por favor que escribas en tu grupo asignado, ya que atendemos únicamente por ahí 🙌🏻`,
+  btnHistorialUsuario.addEventListener('click', async () => {
+    const usuario = document.getElementById('usuario-input').value.trim();
 
-  `¡Hola! Recordá que solo respondemos por tu grupo privado.
-Por favor escribinos por ahí así te asistimos 🙌🏻`,
+    if (!usuario) {
+      mostrarNotificacion("Ingrese un usuario para ver historial", "error");
+      return;
+    }
 
-  `¡Hey! 👋 ¿Todo bien?
-Te pido que nos hables por tu grupo asignado, es el único canal de atención 🛎️🙌🏻`
+    contenidoHistorialUsuario.innerHTML = 'Cargando historial del usuario...';
+
+    try {
+      // Cargas filtradas por usuario
+      const cargasSnap = await cargasRef
+        .orderByChild('usuario')
+        .equalTo(usuario)
+        .limitToLast(30)
+        .once('value');
+
+      // Retiros filtrados por usuario
+      const retirosSnap = await retirosRef
+        .orderByChild('usuario')
+        .equalTo(usuario)
+        .limitToLast(30)
+        .once('value');
+
+      const cargas = cargasSnap.exists() ? cargasSnap.val() : {};
+      const retiros = retirosSnap.exists() ? retirosSnap.val() : {};
+
+      // Unificar y ordenar eventos por timestamp descendente
+      const eventos = [];
+
+      for (const key in cargas) {
+        eventos.push({
+          tipo: 'carga',
+          usuario: cargas[key].usuario,
+          monto: cargas[key].monto,
+          montoBase: cargas[key].montoBase,
+          porcentajeBonificacion: cargas[key].porcentajeBonificacion,
+          fecha: cargas[key].fecha,
+          timestamp: cargas[key].timestamp
+        });
+      }
+
+      for (const key in retiros) {
+        eventos.push({
+          tipo: 'retiro',
+          usuario: retiros[key].usuario,
+          monto: retiros[key].monto,
+          fecha: retiros[key].fecha,
+          timestamp: retiros[key].timestamp
+        });
+      }
+
+      eventos.sort((a, b) => b.timestamp - a.timestamp);
+
+      if (eventos.length === 0) {
+        contenidoHistorialUsuario.innerHTML = '<p class="text-center text-gray-600">No hay movimientos para este usuario.</p>';
+      } else {
+        contenidoHistorialUsuario.innerHTML = '';
+
+        eventos.forEach(ev => {
+          const div = document.createElement('div');
+          div.className = `p-1 rounded mb-0.5 text-xxs ${
+            ev.tipo === 'carga' ? (Number(ev.porcentajeBonificacion) > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800') : 'bg-red-100 text-red-800'
+          }`;
+
+          let infoBonif = '';
+          if (ev.tipo === 'carga' && Number(ev.porcentajeBonificacion) > 0) {
+            const base = Number(ev.montoBase);
+            infoBonif = `<br><em>Bonificación: ${Number(ev.porcentajeBonificacion)}% (Base: $${isNaN(base) ? ev.montoBase : base.toFixed(2)})</em>`;
+          }
+
+          div.innerHTML = `<strong>${ev.tipo === 'carga' ? 'Carga' : 'Retiro'}</strong><br>
+          Monto: $${Number(ev.monto).toFixed(2)}${infoBonif}<br>
+          Fecha: ${ev.fecha}`;
+
+          contenidoHistorialUsuario.appendChild(div);
+        });
+      }
+    } catch (error) {
+      console.error("Error cargando historial de usuario:", error);
+      contenidoHistorialUsuario.innerHTML = `<p class="text-center text-red-600">Error cargando historial del usuario</p>`;
+    }
+
+    modalHistorialUsuario.classList.remove('hidden');
+  });
+
+  cerrarModalUsuarioBtn.addEventListener('click', () => {
+    modalHistorialUsuario.classList.add('hidden');
+  });
+
+  modalHistorialUsuario.addEventListener('click', (e) => {
+    if (e.target === modalHistorialUsuario) {
+      modalHistorialUsuario.classList.add('hidden');
+    }
+  });
+
+  const mensajesUsuariosNuevos = [
+  `Hola, ¿cómo andás? ¡Qué bueno que quieras sumarte a la diversión! 🎉🎰
+
+Primero te vamos a crear tu usuario y contraseña para ingresar a https://ganamos.bet/home
+
+👉 Para cargar fichas solo hace falta que hagas una transferencia bancaria, te paso el CBU.
+
+Podés cargar el monto que prefieras.
+
+💵 Carga mínima: $1500
+💵 Retiro mínimo: $3000
+
+📤 Los retiros también se hacen por CBU.
+
+⏰ Estamos disponibles 24/7 para que juegues cuando quieras.
+Si tenés alguna consulta, escribinos sin problema 🙌`,
+
+  `¡Hola! ¿Todo bien? Genial que quieras empezar a jugar con nosotros 🎲🔥
+
+Vamos a crear tu usuario y contraseña para que puedas acceder a https://ganamos.bet/home 🎰😊
+
+Para cargar fichas y jugar, solo tenés que hacer una transferencia bancaria. Te paso el CBU y podés ingresar el monto que prefieras.
+
+💲 Carga mínima: $1500
+💲 Retiro mínimo: $3000
+
+Los retiros también se hacen por transferencia a CBU 💸
+
+⚠️ Estamos disponibles las 24 horas, los 7 días de la semana para que juegues cuando quieras 🙌🏼
+
+Si tenés alguna consulta, no dudes en preguntarme 🙏🏼`,
+
+  `¡Hola! Qué bueno que te sumes a jugar con nosotros 🎰✨
+
+Te vamos a generar un usuario y clave para que puedas ingresar a https://ganamos.bet/home 🎰✨
+
+Para cargar fichas y empezar a jugar, solo tenés que hacer una transferencia bancaria. Te paso el CBU y podés acreditar el monto que desees.
+
+Monto mínimo para cargar: $1500 💲
+Monto mínimo para retirar: $3000 💲
+
+Los retiros de premios también se realizan por transferencia a CBU 💸
+
+⚠️ Estamos disponibles las 24 horas, todos los días de la semana para que disfrutes cuando quieras 🙌🏼
+
+Si necesitás ayuda o tenés alguna pregunta, podes escribirme sin problema 🙏🏼`
+];
+
+let ultimoMensajeUsuarioNuevo = null;
+
+document.getElementById('btn-info-nuevos').addEventListener('click', async () => {
+  let mensaje;
+  do {
+    mensaje = mensajesUsuariosNuevos[Math.floor(Math.random() * mensajesUsuariosNuevos.length)];
+  } while (mensaje === ultimoMensajeUsuarioNuevo);
+
+  ultimoMensajeUsuarioNuevo = mensaje;
+
+  const copiado = await copiarAlPortapapeles(mensaje);
+  if (copiado) {
+    mostrarNotificacion("Mensaje de info para usuarios nuevos copiado al portapapeles ✔️");
+  }
+});
+
+const mensajesBienvenida = [
+  `¡Hola! Bienvenido/a ❤️ Para poder crear tu usuario y contraseña, ¿me podés pasar tu nombre completo, por favor?`,
+
+  `¡Hola! ¿Me podrías decir tu nombre completo para crear tu usuario y contraseña y que puedas empezar a jugar? 😊`,
+
+  `¡Bienvenido/a!❤️ Para generar tu usuario y clave, necesito que me pases tu nombre completo, ¿podés? 🙌`
+];
+
+let ultimoMensajeBienvenida = null;
+
+document.getElementById('btn-bienvenida').addEventListener('click', async () => {
+  let mensaje;
+  do {
+    mensaje = mensajesBienvenida[Math.floor(Math.random() * mensajesBienvenida.length)];
+  } while (mensaje === ultimoMensajeBienvenida);
+
+  ultimoMensajeBienvenida = mensaje;
+
+  const copiado = await copiarAlPortapapeles(mensaje);
+  if (copiado) {
+    mostrarNotificacion("Mensaje de bienvenida copiado al portapapeles ✔️");
+  }
+});
+
+const mensajesMinimos = [
+  `📢 Te comento que:\n💵 Monto mínimo de carga: $1500\n💸 Monto mínimo de retiro: $3000`,
+  `ℹ️ Importante a tener en cuenta:\n✅ Carga mínima: $1500 💰\n✅ Retiro mínimo: $3000 🏧`,
+  `📝 Te paso los montos mínimos:\n📥 Cargar fichas: desde $1500\n📤 Retirar premios: desde $3000`
+];
+
+let ultimoMensajeMinimos = null;
+
+document.getElementById('btn-minimos').addEventListener('click', async () => {
+  let mensaje;
+  do {
+    mensaje = mensajesMinimos[Math.floor(Math.random() * mensajesMinimos.length)];
+  } while (mensaje === ultimoMensajeMinimos && mensajesMinimos.length > 1);
+
+  ultimoMensajeMinimos = mensaje;
+
+  const copiado = await copiarAlPortapapeles(mensaje);
+  if (copiado) mostrarNotificacion("Mensaje copiado ✔️");
+});
+
+const mensajesPlataforma = [
+  `Nuestra plataforma es: https://www.ganamos.bet/home`,
+  `Te dejo la web: https://www.ganamos.bet/home`,
+  `Link para ingresar: https://www.ganamos.bet/home`
+];
+
+let ultimoMensajePlataforma = null;
+
+document.getElementById('btn-plataforma').addEventListener('click', async () => {
+  let mensaje;
+  do {
+    mensaje = mensajesPlataforma[Math.floor(Math.random() * mensajesPlataforma.length)];
+  } while (mensaje === ultimoMensajePlataforma && mensajesPlataforma.length > 1);
+
+  ultimoMensajePlataforma = mensaje;
+
+  const copiado = await copiarAlPortapapeles(mensaje);
+  if (copiado) mostrarNotificacion("Link copiado ✔️");
+});
+const mensajesGrupoPrivado = [
+  `¡Hola! 😊 A partir de ahora, todas las cargas y retiros se gestionan desde un grupo privado.
+🔗 Te paso el link para que te unas 🔒
+En ese grupo está nuestro equipo listo para ayudarte con lo que necesites 🙌
+Es exclusivo, solo para vos 💎
+Una vez que entres, avisá si querés cargar o retirar. ¡Gracias! 🎰💖`,
+
+  `¡Hola! 👋 Desde este momento, las cargas y retiros se realizan únicamente dentro de un grupo privado.
+🔐 Te comparto el link para que te unas.
+Ahí vas a tener atención directa del equipo y asistencia las 24hs 🕒💬
+📢 Es un grupo exclusivo para vos.
+Cuando ingreses, solo tenés que avisar si querés cargar fichas o hacer un retiro. ¡Gracias por estar! 🎲💰`,
+
+  `¡Bienvenido/a! 😄 Todas las cargas y retiros se hacen ahora a través de un grupo privado.
+🔗 Acá tenés el link para sumarte 🔒
+Nuestro equipo está ahí para ayudarte cuando lo necesites 🤝
+👤 Es un grupo exclusivo y personalizado.
+Cuando estés dentro, avisá lo que necesitás: cargar o retirar, ¡y listo! 🎉🎰`
+];
+
+let ultimoMensajeGrupo = null;
+
+document.getElementById('btn-unirse').addEventListener('click', async () => {
+  let mensaje;
+  do {
+    mensaje = mensajesGrupoPrivado[Math.floor(Math.random() * mensajesGrupoPrivado.length)];
+  } while (mensaje === ultimoMensajeGrupo && mensajesGrupoPrivado.length > 1);
+
+  ultimoMensajeGrupo = mensaje;
+
+  const copiado = await copiarAlPortapapeles(mensaje);
+  if (copiado) mostrarNotificacion("Mensaje copiado ✔️");
+});
+const mensajesContactoGrupo = [
+  `Buenas❤️
+Te pido que nos escribas por tu grupo asignado, es el único canal de atención que usamos 🛎️🙌🏻
+¡Gracias por tu comprensión!`,
+
+  `¡Hola! ❤️ Para cualquier consulta o gestión, recordá que solo respondemos por tu grupo asignado 🔒
+Es nuestro canal exclusivo de atención 🛎️✨`,
+
+  `¡Hola hola! ❤️
+¿Todo bien? Por favor, escribinos únicamente por tu grupo privado ✅
+Es el único canal habilitado para cargas, retiros y consultas 🛎️💬`
 ];
 
 let ultimoMensajeContacto = null;
 
-if (btnContactanosGrupo) {
-  btnContactanosGrupo.addEventListener('click', () => {
-    let mensajeNuevo;
-    do {
-      mensajeNuevo = mensajesContactanosGrupo[Math.floor(Math.random() * mensajesContactanosGrupo.length)];
-    } while (mensajeNuevo === ultimoMensajeContacto && mensajesContactanosGrupo.length > 1);
+document.getElementById('btn-contactanos').addEventListener('click', async () => {
+  let mensaje;
+  do {
+    mensaje = mensajesContactoGrupo[Math.floor(Math.random() * mensajesContactoGrupo.length)];
+  } while (mensaje === ultimoMensajeContacto && mensajesContactoGrupo.length > 1);
 
-    ultimoMensajeContacto = mensajeNuevo;
+  ultimoMensajeContacto = mensaje;
 
-    navigator.clipboard.writeText(mensajeNuevo).then(() => {
-      mostrarToast('✅ Mensaje de contacto copiado.');
-    }).catch(() => {
-      mostrarToast('❌ Error al copiar el mensaje.', false);
-    });
-  });
-}
-
-// 💳 Botón "CBU"
-const btnCBU = Array.from(document.querySelectorAll('.btn-warning')).find(
-  btn => btn.textContent.trim() === "CBU"
-);
-
-let ultimoIndiceCBU = -1;
-
-if (btnCBU) {
-  btnCBU.addEventListener('click', () => {
-    const nombreTitular = titular.value.trim();
-    const numeroCBU = cbu.value.trim();
-    const aliasCBU = alias.value.trim();
-
-    if (!nombreTitular || !numeroCBU || !aliasCBU) {
-      mostrarToast('⚠️ Faltan datos del titular, CBU o alias.');
-      return;
-    }
-
-    const variantesCBU = [
-      `¡Hola! ¿Todo bien?
-💳 Te paso los datos para transferir:
-CBU: ${numeroCBU}
-Alias: ${aliasCBU}
-🧾 A nombre de: ${nombreTitular}
-
-Mandame el comprobante y te acredito las fichas 🎰
-⚠️ Siempre consultá el alias antes de transferir.`,
-
-      `¡Ey! Te dejo los datos para que puedas transferir 🎰💸
-🧾 Titular: ${nombreTitular}
-🏦 Alias: ${aliasCBU}
-🔢 CBU: ${numeroCBU}
-
-Pasame el comprobante y te lo acredito al toque.
-Siempre chequeá que el alias/cbu sea correcto ✅`,
-
-      `¡Holis! Acá tenés todo lo que necesitás para cargar:
-🏦 Alias: ${aliasCBU}
-🔢 CBU: ${numeroCBU}
-🧾 Titular: ${nombreTitular}
-
-Cuando transfieras, mandame el comprobante 🎰
-⚠️ No te olvides de verificar el alias.`,
-
-      `¡Genial! Para cargar fichas, usá estos datos:
-🧾 A nombre de: ${nombreTitular}
-🔢 CBU: ${numeroCBU}
-🏦 Alias: ${aliasCBU}
-
-Pasame el comprobante después y te lo acredito 🔥
-Recordá confirmar el alias antes de enviar 😉`,
-
-      `¡Perfecto! Te paso los datos para hacer la carga:
-🏦 Alias: ${aliasCBU}
-🧾 A nombre de: ${nombreTitular}
-🔢 CBU: ${numeroCBU}
-
-📤 Enviame el comprobante cuando lo hagas y lo activo 🎰
-
-🔔 Antes de transferir, asegurate de revisar bien el CBU/Alias para evitar problemas.`
-    ];
-
-    let nuevoIndice;
-    do {
-      nuevoIndice = Math.floor(Math.random() * variantesCBU.length);
-    } while (nuevoIndice === ultimoIndiceCBU && variantesCBU.length > 1);
-    ultimoIndiceCBU = nuevoIndice;
-
-    const mensajeCBU = variantesCBU[nuevoIndice];
-
-    navigator.clipboard.writeText(mensajeCBU).then(() => {
-      mostrarToast('✅ Datos de transferencia copiados al portapapeles.');
-    }).catch(() => {
-      mostrarToast('❌ Error al copiar los datos.');
-    });
-  });
-}
-
-// 👩‍🦰 Botón "Saludos mujer con CBU"
-const btnSaludoMujerCBU = Array.from(document.querySelectorAll('.btn-warning')).find(
-  btn => btn.textContent.trim() === "Saludos mujer con CBU"
-);
-
-let ultimoIndiceMujerCBU = -1;
-
-if (btnSaludoMujerCBU) {
-  btnSaludoMujerCBU.addEventListener('click', () => {
-    const nombreTitular = titular.value.trim();
-    const numeroCBU = cbu.value.trim();
-    const aliasCBU = alias.value.trim();
-
-    if (!nombreTitular || !numeroCBU || !aliasCBU) {
-      mostrarToast('⚠️ Faltan datos del titular, CBU o alias.');
-      return;
-    }
-
-    const mensajesMujer = [
-      `¡Holis amigaa 🌸 ¿Cómo estás?
-💳 Te dejo los datos para que puedas cargar tus fichas:
-🧾 A nombre de: ${nombreTitular}
-🏦 Alias: ${aliasCBU}
-🔢 CBU: ${numeroCBU}
-
-Cuando lo hagas, mandame el comprobante y te las acredito 🎰✨
-
-📌 No te olvides de consultar el CBU o Alias antes de enviar cualquier pago.
-
-`,
-
-      `Hola bellaa 😊
-Para cargar saldo en tu cuenta, estos son los datos:
-🏦 Alias: ${aliasCBU}
-🧾 Titular: ${nombreTitular}
-🔢 CBU: ${numeroCBU}
-
-Mandame el comprobante así te activo todo en el momento 💖
-🔔 Antes de transferir, asegurate de revisar bien el CBU/Alias para evitar problemas.
-
-`,
-
-      `¡Ey genia! 💃 Te paso todo lo necesario para que hagas la carga:
-🔢 CBU: ${numeroCBU}
-🏦 Alias: ${aliasCBU}
-🧾 A nombre de: ${nombreTitular}
-
-Cuando termines, pasame el comprobante y lo cargo 🎲🔥
-
-⚠️ Recordá siempre consultar el CBU/Alias antes de enviar la transferencia.`,
-
-      `Hola reina 👑
-💰 Estos son los datos para que transfieras:
-🧾 Titular: ${nombreTitular}
-🔢 CBU: ${numeroCBU}
-🏦 Alias: ${aliasCBU}
-
-📌 No te olvides de consultar el CBU o Alias antes de enviar cualquier pago
-
-Mandá el comprobante y te cargo al instante 🎰✨`,
-
-      `¡Buenaas! 💕
-Acá están los datos para cargar:
-🏦 Alias: ${aliasCBU}
-🔢 CBU: ${numeroCBU}
-🧾 A nombre de: ${nombreTitular}
-
-Enviame el comprobante así cargamos las fichas 🎲💸
-
-🔍 Antes de enviar, recordá verificar el CBU o Alias para evitar errores.`
-    ];
-
-    let nuevoIndice;
-    do {
-      nuevoIndice = Math.floor(Math.random() * mensajesMujer.length);
-    } while (nuevoIndice === ultimoIndiceMujerCBU && mensajesMujer.length > 1);
-    ultimoIndiceMujerCBU = nuevoIndice;
-
-    const mensaje = mensajesMujer[nuevoIndice];
-
-    navigator.clipboard.writeText(mensaje).then(() => {
-      mostrarToast('✅ Mensaje para mujer copiado al portapapeles.');
-    }).catch(() => {
-      mostrarToast('❌ Error al copiar el mensaje.');
-    });
-  });
-}
-
-// Botón Info para retirar
-const btnInfoParaRetirar = Array.from(document.querySelectorAll('.btn-warning')).find(
-  btn => btn.textContent.trim() === "Info para retirar"
-);
-
-const mensajesInfoRetiro = [
-  "🎉 ¡Bien ahí, felicitaciones! Para poder hacer tu retiro, necesitás pasarnos tu CBU, nombre del titular y el monto. ¡A disfrutar ese premio! 🙌💸",
-  "¡Qué buena noticia! 🎊 Solo faltan algunos datos para el retiro: CBU, nombre del titular y monto a retirar. Cuando nos los pases, te lo procesamos rápido. 🎰✨",
-  "🎉 Felicitaciones por tu premio! Ahora, para retirar, enviános tu CBU, el nombre del titular y el monto que querés retirar. ¡Vamos que se puede! 💰🙌"
+  const copiado = await copiarAlPortapapeles(mensaje);
+  if (copiado) mostrarNotificacion("Mensaje copiado ✔️");
+});
+const mensajesInfo = [
+  "🎉 ¡Felicitaciones por tu premio! Para hacer el retiro, enviános tu CBU, nombre del titular y el monto que querés retirar. ¡Dale que es tuyo! 💰🙌",
+  "🎊 ¡Genial! Ganaste un premio 🎉. Para retirar, mandanos tu CBU, titular y cuánto querés retirar. ¡Estamos para ayudarte! 💸💪",
+  "🏆 ¡Felicitaciones! Para poder retirar tu premio, pasanos tu CBU, el nombre del titular y el monto a retirar. ¡Vamos que ya falta poco! 💰👏.. ⚠️Recorda que las bonificaciones no son extraibles"
 ];
 
-let ultimoIndiceInfoRetiro = -1;
+let ultimoMensajeInfo = null;
 
-if (btnInfoParaRetirar) {
-  btnInfoParaRetirar.addEventListener('click', () => {
-    let nuevoIndice;
-    do {
-      nuevoIndice = Math.floor(Math.random() * mensajesInfoRetiro.length);
-    } while (nuevoIndice === ultimoIndiceInfoRetiro && mensajesInfoRetiro.length > 1);
-    ultimoIndiceInfoRetiro = nuevoIndice;
+document.getElementById('btn-info-retiro').addEventListener('click', async () => {
+  let mensaje;
+  do {
+    mensaje = mensajesInfo[Math.floor(Math.random() * mensajesInfo.length)];
+  } while (mensaje === ultimoMensajeInfo);
 
-    const mensaje = mensajesInfoRetiro[nuevoIndice];
+  ultimoMensajeInfo = mensaje;
 
-    navigator.clipboard.writeText(mensaje).then(() => {
-      mostrarToast('✅ Mensaje para info de retiro copiado al portapapeles.');
-    }).catch(() => {
-      mostrarToast('❌ Error al copiar el mensaje de retiro.');
-    });
-  });
-}
-
-// Botón Felicitaciones
-const btnFelicitaciones = Array.from(document.querySelectorAll('.btn-warning')).find(
-  btn => btn.textContent.trim() === "Felicitaciones"
-);
+  const copiado = await copiarAlPortapapeles(mensaje);
+  if (copiado) {
+    mostrarNotificacion("Mensaje de Info de retiro copiado ✔️");
+  }
+});
 
 const mensajesFelicitaciones = [
-  "🎉 ¡Felicitaciones! Para que sigas jugando a full, por cada amigo que refieras y haga su carga, te regalo $3000 para tu próxima recarga. 🍀🎰 ¡Aprovechá y compartí la buena!",
-  "¡Qué alegría! 🎊 Cada vez que un amigo que vos invites cargue, te doy $3000 extra para tu próxima carga. 🎰🍀 ¡Dale, que esto se pone mejor!",
-  "🎉 ¡Felicidades! Por cada amigo que traigas y que cargue, te regalo $3000 para usar en tu próxima carga. 🍀🔥 ¡No te lo pierdas y seguí ganando!"
+  "🎉 ¡Felicitaciones! Para que sigas jugando sin parar, por cada amigo que refieras y cargue, te regalo $3000 para tu próxima recarga. 🍀🎰 ¡No lo dejes pasar, compartí y ganá!",
+  "🎊 ¡Excelente! Por cada amigo que invites y realice su carga, recibís $3000 para usar en tu próxima recarga. 🍀🎰 ¡Seguí jugando y compartiendo la diversión!",
+  "🎉 ¡Genial! Por cada amigo que traigas y que cargue, te doy $3000 para tu próxima carga. 🍀🎰 ¡Aprovechá y seguí ganando con tus referidos!"
 ];
 
-let ultimoIndiceFelicitaciones = -1;
+let ultimoMensajeFelicitaciones = null;
 
-if (btnFelicitaciones) {
-  btnFelicitaciones.addEventListener('click', () => {
-    let nuevoIndice;
-    do {
-      nuevoIndice = Math.floor(Math.random() * mensajesFelicitaciones.length);
-    } while (nuevoIndice === ultimoIndiceFelicitaciones && mensajesFelicitaciones.length > 1);
-    ultimoIndiceFelicitaciones = nuevoIndice;
+document.getElementById('btn-felicitaciones').addEventListener('click', async () => {
+  let mensaje;
+  do {
+    mensaje = mensajesFelicitaciones[Math.floor(Math.random() * mensajesFelicitaciones.length)];
+  } while (mensaje === ultimoMensajeFelicitaciones);
 
-    const mensaje = mensajesFelicitaciones[nuevoIndice];
+  ultimoMensajeFelicitaciones = mensaje;
 
-    navigator.clipboard.writeText(mensaje).then(() => {
-      mostrarToast('✅ Mensaje de felicitaciones copiado al portapapeles.');
-    }).catch(() => {
-      mostrarToast('❌ Error al copiar el mensaje de felicitaciones.');
-    });
-  });
-}
-
-// Botón Info de REFERIDO
-const btnInfoReferido = Array.from(document.querySelectorAll('.btn-warning')).find(
-  btn => btn.textContent.trim() === "Info de REFERIDO"
-);
-
-const mensajesInfoReferido = [
-  `🎰 Tenemos un plan de referidos para que ganes fichas gratis!
-
-Por cada usuario que traigas, te regalamos 3000 fichas para que juegues sin gastar un peso 🎁
-
-Solo pasales mi contacto y que digan que vienen de tu parte mencionando tu usuario, así te damos la bonificación ☘️
-
-La bonificación se activa cuando el referido hace su primera carga.
-Los 3000$ se suman en tu próxima carga.
-Recordanos a quién referiste cuando cargues para acreditarte.
-Las bonificaciones no se pueden retirar.`,
-
-  `🎉 ¡Sumate al plan de referidos y gana fichas gratis!
-
-Te cuento que por cada amigo que invites y cargue, recibís 3000 fichas para usar en tu próxima carga 🎰🎁
-
-Solo pediles que digan que vienen de tu parte con tu nombre de usuario para acreditar la bonificación ☘️
-
-La bonificación se otorga después de la primera carga del referido.
-Se suma en tu próxima recarga.
-Recordanos tus referidos cuando cargues para sumarte el bono.
-Las bonificaciones no se pueden retirar.`,
-
-  `🍀 ¡Referí y ganá fichas gratis!
-
-Por cada jugador que me traigas, te regalamos 3000 fichas para que juegues gratis 🎰🎉
-
-Solo tenés que pasarles mi contacto y que digan tu nombre de usuario para saber que vienen de tu parte ☘️
-
-El bono se activa con la primera carga del referido.
-Se suma en tu próxima carga.
-Avisanos quiénes referiste para acreditarte.`
-];
-
-let ultimoIndiceInfoReferido = -1;
-
-if (btnInfoReferido) {
-  btnInfoReferido.addEventListener('click', () => {
-    let nuevoIndice;
-    do {
-      nuevoIndice = Math.floor(Math.random() * mensajesInfoReferido.length);
-    } while (nuevoIndice === ultimoIndiceInfoReferido && mensajesInfoReferido.length > 1);
-    ultimoIndiceInfoReferido = nuevoIndice;
-
-    const mensaje = mensajesInfoReferido[nuevoIndice];
-
-    navigator.clipboard.writeText(mensaje).then(() => {
-      mostrarToast('✅ Mensaje de info de referido copiado al portapapeles.');
-    }).catch(() => {
-      mostrarToast('❌ Error al copiar el mensaje de info de referido.');
-    });
-  });
-}
-
-// Botón AGENDAME
-const btnAgendame = Array.from(document.querySelectorAll('.btn-warning')).find(
-  btn => btn.textContent.trim() === "AGENDAME"
-);
+  const copiado = await copiarAlPortapapeles(mensaje);
+  if (copiado) {
+    mostrarNotificacion("Mensaje de felicitaciones copiado ✔️");
+  }
+});
 
 const mensajesAgendame = [
-  `¡Hola soy Azul🫶🏼 📲 Agendame y vas a recibir todas las promos y novedades. 🎁
-Además, por cada amigo que refieras, te damos $3000 en fichas para tu próxima carga. 🎰💥
-Solo pediles que mencionen tu usuario y te acreditamos el bono. ¡A aprovechar! 🚀🔥`,
+  `🙋‍♀️ ¡Celeste acá! 📲 Agendame así no te perdés ninguna promo 🎉
+¿Sabías que por cada referido te regalo $3000 para tu próxima carga? 🎰💰
+Solo tienen que mencionar tu usuario ¡y listo! Las fichas son tuyas 💎
+¡Dale que se viene lo bueno! 🚀🔥`,
 
-  `¡Azul aqui🙋‍♀️! 📲 Agendame y no te perdés ninguna promo. 🎉
-¿Sabías que por cada referido te regalamos $3000 para tu próxima carga? 🎰💰
-Solo que mencionen tu usuario y listo, las fichas son tuyas. ¡Dale que se viene lo bueno! 🚀🔥`,
+  `¡Hola! Celeste te saluda 🙋‍♀️
+📲 Agendame así estás al tanto de todas las promos 🎉
+Cada vez que un amigo mencione tu usuario y haga su carga, te llevás $3000 para tu próxima recarga 💰🎰
+¡No te lo pierdas! Lo que viene, viene con todo 🚀🔥`,
 
-  `¡Qué tal! Soy Azul🫶🏼 📲 Guardame en tus contactos para recibir todas las promos. 🎁
-Traé amigos y ganá $3000 en fichas para tu próxima carga. 🎰🔥
-Solo pediles que digan tu usuario al registrarse y te acreditamos el bono. ¡A jugar! 🚀✨`
+  `🙋‍♀️ Soy Celeste, ¡agendame! 📲 Así no te perdés ninguna novedad ni promo 🎉
+🎰 Por cada persona que refieras y cargue fichas, ganás $3000 para usar en tu próxima carga 💸
+Solo deben decir tu usuario y listo. ¡Vamos con toda! 🚀🔥`
 ];
 
-let ultimoIndiceAgendame = -1;
+let ultimoMensajeAgendame = null;
 
-if (btnAgendame) {
-  btnAgendame.addEventListener('click', () => {
-    let nuevoIndice;
-    do {
-      nuevoIndice = Math.floor(Math.random() * mensajesAgendame.length);
-    } while (nuevoIndice === ultimoIndiceAgendame && mensajesAgendame.length > 1);
-    ultimoIndiceAgendame = nuevoIndice;
+document.getElementById('btn-agendame').addEventListener('click', async () => {
+  let mensaje;
+  do {
+    mensaje = mensajesAgendame[Math.floor(Math.random() * mensajesAgendame.length)];
+  } while (mensaje === ultimoMensajeAgendame);
 
-    const mensaje = mensajesAgendame[nuevoIndice];
+  ultimoMensajeAgendame = mensaje;
+  await copiarAlPortapapeles(mensaje);
+  mostrarNotificacion("Mensaje de Agendame copiado al portapapeles ✔️");
+});
+const modalTope = document.getElementById('modal-tope-retiros');
+const btnTope = document.getElementById('btn-tope-retiros');
+const cerrarTope = document.getElementById('cerrar-modal-tope');
 
-    navigator.clipboard.writeText(mensaje).then(() => {
-      mostrarToast('✅ Mensaje de AGENDAME copiado al portapapeles.');
-    }).catch(() => {
-      mostrarToast('❌ Error al copiar el mensaje de AGENDAME.');
-    });
-  });
-}
+btnTope.addEventListener('click', () => {
+  modalTope.classList.remove('hidden');
+});
 
+cerrarTope.addEventListener('click', () => {
+  modalTope.classList.add('hidden');
+});
 
-
-
-
-  // Cargar datos guardados
-  if (localStorage.getItem('titularCuenta')) titular.value = localStorage.getItem('titularCuenta');
-  if (localStorage.getItem('cbuCuenta')) cbu.value = localStorage.getItem('cbuCuenta');
-  if (localStorage.getItem('aliasCuenta')) alias.value = localStorage.getItem('aliasCuenta');
-
-  let editando = false;
-  let usuariosGenerados = 0;
-
-  // Función para validar nombre: solo letras y espacios, min 3 chars
-  function validarNombre(nombre) {
-    const regex = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{3,}$/;
-    return regex.test(nombre.trim());
+modalTope.addEventListener('click', (e) => {
+  if (e.target === modalTope) {
+    modalTope.classList.add('hidden');
   }
+});
 
-  // Habilitar/deshabilitar botón agregar según validez del input
-  inputNombre.addEventListener('input', () => {
-    if (validarNombre(inputNombre.value)) {
-      botonAgregar.removeAttribute('disabled');
-    } else {
-      botonAgregar.setAttribute('disabled', true);
-    }
-  });
+let modoEditarDatos = false;
 
-  // Función para mostrar toast con animación y color
-  function mostrarToast(mensaje, exito = true) {
-    if (!toast) return;
-    toast.textContent = mensaje;
-    toast.classList.remove('toast-error', 'toast-success');
-    toast.classList.add('visible');
-    toast.classList.add(exito ? 'toast-success' : 'toast-error');
+document.getElementById('btn-guardar-datos').addEventListener('click', async () => {
+  const usuario = document.getElementById('usuario-input').value.trim().toLowerCase();
+  const titular = document.getElementById('input-titular').value.trim();
+  const cbu = document.getElementById('input-cbu').value.trim();
+  const alias = document.getElementById('input-alias').value.trim();
 
-    setTimeout(() => {
-      toast.classList.remove('visible', 'toast-error', 'toast-success');
-    }, 4000);
-  }
+  
+  const titularInput = document.getElementById('input-titular');
+  const cbuInput = document.getElementById('input-cbu');
+  const aliasInput = document.getElementById('input-alias');
+  const boton = document.getElementById('btn-guardar-datos');
 
-  // Función para generar usuario
-  function generarUsuario(nombre) {
-    const prefijo = 'A1';
-    const maxLen = 16;
-    nombre = nombre.trim();
-    if (!nombre) return null;
-
-    const numeroRandom = Math.floor(Math.random() * 90) + 10; // 10 a 99
-    const maxNombreLen = maxLen - prefijo.length - numeroRandom.toString().length;
-
-    let nombreSimplificado;
-    if (nombre.length > maxNombreLen) {
-      const primeros = nombre.slice(0, 7);
-      const ultimos = nombre.slice(nombre.length - 5);
-      nombreSimplificado = primeros + ultimos;
-    } else {
-      nombreSimplificado = nombre;
-    }
-
-    // Remover espacios para usuario
-    return prefijo + nombreSimplificado.replace(/\s+/g, '') + numeroRandom;
-  }
-
-  // Evento botón editar/guardar datos CBU
-  botonEditarGuardar.addEventListener('click', () => {
-    if (!editando) {
-      titular.removeAttribute('readonly');
-      cbu.removeAttribute('readonly');
-      alias.removeAttribute('readonly');
-      iconoEditarGuardar.classList.replace('bi-pencil', 'bi-save');
-      botonEditarGuardar.innerHTML = '';
-      botonEditarGuardar.appendChild(iconoEditarGuardar);
-      botonEditarGuardar.appendChild(document.createTextNode(' Guardar datos'));
-      titular.focus();
-      editando = true;
-    } else {
-      titular.setAttribute('readonly', true);
-      cbu.setAttribute('readonly', true);
-      alias.setAttribute('readonly', true);
-
-      localStorage.setItem('titularCuenta', titular.value.trim());
-      localStorage.setItem('cbuCuenta', cbu.value.trim());
-      localStorage.setItem('aliasCuenta', alias.value.trim());
-
-      iconoEditarGuardar.classList.replace('bi-save', 'bi-pencil');
-      botonEditarGuardar.innerHTML = '';
-      botonEditarGuardar.appendChild(iconoEditarGuardar);
-      botonEditarGuardar.appendChild(document.createTextNode(' Editar datos del CBU'));
-
-      mostrarToast('✅ Datos guardados correctamente.');
-
-      editando = false;
-    }
-  });
-
-  // Evento botón agregar nuevo usuario
-  botonAgregar.addEventListener('click', () => {
-    const nombre = inputNombre.value;
-    if (!validarNombre(nombre)) {
-      mostrarToast('❌ Nombre inválido. Solo letras y mínimo 3 caracteres.', false);
+  if (!modoEditarDatos) {
+    // Guardar los datos
+    if (!titular || !cbu || !alias) {
+      mostrarNotificacion("Completá todos los campos", "error");
       return;
     }
 
-    const usuario = generarUsuario(nombre);
-    const contrasena = 'hola1234'; // Puedes generar una contraseña aleatoria si quieres
-
-    // Seleccionamos un mensaje aleatorio
-    const mensajeExtra = mensajes[Math.floor(Math.random() * mensajes.length)];
-
-    const textoACopiar = `Usuario: ${usuario}\nClave: ${contrasena}\n\n${mensajeExtra}`;
-
-    navigator.clipboard.writeText(textoACopiar).then(() => {
-      mostrarToast('✅ Mensaje copiado al portapapeles.');
-      inputUsuarioGenerado.value = usuario;
-      inputContrasenaGenerada.value = contrasena;
-      textareaMensajeGenerado.value = textoACopiar;
-
-      usuariosGenerados++;
-      contadorUsuariosSpan.textContent = usuariosGenerados;
-
-      // Opcional: limpiar el inputNombre después de crear usuario
-      inputNombre.value = '';
-      botonAgregar.setAttribute('disabled', true);
-    }).catch(() => {
-      mostrarToast('❌ Error al copiar al portapapeles.', false);
-    });
-  });
-
-  // Evento botón limpiar campos
-  botonLimpiar.addEventListener('click', () => {
-    inputNombre.value = '';
-    inputUsuarioGenerado.value = '';
-    inputContrasenaGenerada.value = '';
-    textareaMensajeGenerado.value = '';
-    botonAgregar.setAttribute('disabled', true);
-  });
-
-  // Evento botón Info para usuarios nuevos con lógica para no repetir mensaje seguido
-  let ultimoIndiceInfo = -1;
-  if (botonInfoUsuariosNuevos) {
-    botonInfoUsuariosNuevos.addEventListener('click', () => {
-      let nuevoIndice;
-      do {
-        nuevoIndice = Math.floor(Math.random() * mensajesInfoUsuariosNuevos.length);
-      } while (nuevoIndice === ultimoIndiceInfo && mensajesInfoUsuariosNuevos.length > 1);
-      ultimoIndiceInfo = nuevoIndice;
-
-      const mensajeInfo = mensajesInfoUsuariosNuevos[nuevoIndice];
-      navigator.clipboard.writeText(mensajeInfo).then(() => {
-        mostrarToast('✅ Mensaje de info copiado al portapapeles.');
-      }).catch(() => {
-        mostrarToast('❌ Error al copiar el mensaje de info.', false);
+    try {
+      await firebase.database().ref("usuarios/" + usuario).update({
+        titular: titular,
+        cbu: cbu,
+        alias: alias
       });
-    });
+
+      mostrarNotificacion("Datos guardados correctamente ✅");
+
+      // Bloquea los campos
+      titularInput.disabled = true;
+      cbuInput.disabled = true;
+      aliasInput.disabled = true;
+
+      boton.textContent = "Editar Datos";
+      modoEditarDatos = true;
+    } catch (error) {
+      console.error("Error al guardar datos:", error);
+      mostrarNotificacion("Error al guardar datos", "error");
+    }
+  } else {
+    // Modo edición
+    titularInput.disabled = false;
+    cbuInput.disabled = false;
+    aliasInput.disabled = false;
+
+    boton.textContent = "Guardar Datos";
+    modoEditarDatos = false;
+  }
+});
+
+document.getElementById('btn-cbu').addEventListener('click', async () => {
+  const titular = document.getElementById('input-titular').value.trim();
+  const cbu = document.getElementById('input-cbu').value.trim();
+  const alias = document.getElementById('input-alias').value.trim();
+
+  if (!titular || !cbu || !alias) {
+    mostrarNotificacion("Faltan completar datos para copiar", "error");
+    return;
   }
 
-  // Datos de topes de retiro según carga diaria
-const topesRetiros = [
-  { rango: 'De $1500 a $14000', tope: '$50000' },
-  { rango: 'De $15000 a $29000', tope: '$75000' },
-  { rango: 'De $30000 a $50000', tope: '$100000' },
-  { rango: '$75000 o más', tope: 'El doble / Consultar monto' }
+  const campos = [
+    `Titular: ${titular}`,
+    `CBU: ${cbu}`,
+    `Alias: ${alias}`
+  ];
+
+  // Desordenar el array aleatoriamente
+  const camposAleatorios = campos.sort(() => Math.random() - 0.5);
+
+  const mensaje = camposAleatorios.join('\n');
+
+  try {
+    await navigator.clipboard.writeText(mensaje);
+    mostrarNotificacion("Datos copiados al portapapeles ✅");
+  } catch (err) {
+    mostrarNotificacion("Error al copiar los datos", "error");
+  }
+});
+
+const mensajesCBU = [
+  (titular, cbu, alias) => 
+    `¡Hola! ¿Todo bien? 😊
+
+💳 Te paso los datos para transferir:
+Alias: ${alias}
+CBU: ${cbu}
+🧾 A nombre de: ${titular}
+
+Mandame el comprobante y te acredito las fichas 🎰
+⚠️ Siempre revisá el alias antes de hacer la transferencia.`,
+
+  (titular, cbu, alias) =>
+    `¡Hey! 👋 ¿Cómo estás?
+Acá van los datos para cargar tus fichas:
+
+Titular: ${titular}
+CBU: ${cbu}
+Alias: ${alias}
+
+📩 Enviame el comprobante cuando termines y te acredito al toque 🎰
+⚠️ Verificá el alias antes de transferir.`,
+
+  (titular, cbu, alias) =>
+    `¡Hola! 😊 Te paso los datos para que puedas hacer la transferencia:
+
+🏦 CBU: ${cbu}
+📛 Alias: ${alias}
+👤 A nombre de: ${titular}
+
+📩 Mandame el comprobante una vez que transfieras y te cargo las fichas 🎰
+⚠️ Siempre chequeá que el alias sea correcto antes de enviar.`,
+
+  (titular, cbu, alias) =>
+    `💳 Te paso los datos para transferir:
+
+🧾 A nombre de: ${titular}
+      CBU: ${cbu}
+      Alias: ${alias}
+
+Mandame el comprobante y te acredito las fichas 🎰
+⚠️ Siempre revisá el alias antes de hacer la transferencia.`,
+
+  (titular, cbu, alias) =>
+    `Acá van los datos para cargar tus fichas:
+
+💳 CBU: ${cbu}
+📌 Alias: ${alias}
+👤 Titular: ${titular}
+
+📩 Enviame el comprobante cuando termines y te acredito al toque 🎰
+⚠️ Verificá el alias antes de transferir.`,
+
+  (titular, cbu, alias) =>
+    `Te paso los datos para que puedas hacer la transferencia:
+
+📛 Alias: ${alias}
+🏦 CBU: ${cbu}
+👤 A nombre de: ${titular}
+
+📩 Mandame el comprobante una vez que transfieras y te cargo las fichas 🎰
+⚠️ Siempre chequeá que el alias sea correcto antes de enviar.`
 ];
 
-const btnTopeRetiros = document.getElementById('btnTopeRetiros');
-const listaTopesRetiros = document.getElementById('listaTopesRetiros');
+// Resto del código igual
+let ultimoMensajeIndex = null;
 
-// Crear items en la lista del modal
-function cargarTopes() {
-  listaTopesRetiros.innerHTML = ''; // limpiar lista
+document.getElementById('btn-cbu').addEventListener('click', async () => {
+  const titular = document.getElementById('input-titular').value.trim();
+  const cbu = document.getElementById('input-cbu').value.trim();
+  const alias = document.getElementById('input-alias').value.trim();
 
-  topesRetiros.forEach(({ rango, tope }) => {
-    const li = document.createElement('li');
-    li.classList.add('list-group-item', 'bg-secondary', 'text-light');
-    li.textContent = `Con carga ${rango}, tope de retiro diario: ${tope}`;
-    listaTopesRetiros.appendChild(li);
+  if (!titular || !cbu || !alias) {
+    mostrarNotificacion("Faltan completar datos para copiar", "error");
+    return;
+  }
+
+  let index;
+  do {
+    index = Math.floor(Math.random() * mensajesCBU.length);
+  } while (index === ultimoMensajeIndex);
+  ultimoMensajeIndex = index;
+
+  const mensaje = mensajesCBU[index](titular, cbu, alias);
+
+  try {
+    await navigator.clipboard.writeText(mensaje);
+    mostrarNotificacion("Mensaje CBU copiado al portapapeles ✅");
+  } catch (err) {
+    mostrarNotificacion("Error al copiar los datos", "error");
+  }
+});
+
+const montoInput = document.getElementById('monto');
+const montoDropdown = document.getElementById('monto-dropdown');
+const montoButtons = montoDropdown.querySelectorAll('.monto-btn');
+
+// Mostrar dropdown al enfocar el input
+montoInput.addEventListener('focus', () => {
+  montoDropdown.classList.remove('hidden');
+});
+
+// Opcional: también mostrar al hacer click dentro del input (por si no enfoca por teclado)
+montoInput.addEventListener('click', () => {
+  montoDropdown.classList.remove('hidden');
+});
+
+// Al hacer click en un botón del dropdown, poner el valor en el input y ocultar dropdown
+montoButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    montoInput.value = btn.textContent.replace(/,/g, ''); // Quitar comas si querés solo número limpio
+    montoDropdown.classList.add('hidden');
+    montoInput.focus();
   });
-}
+});
 
-// Mostrar modal
-const modalElement = document.getElementById('modalTopeRetiros');
-const modalBootstrap = new bootstrap.Modal(modalElement);
-
-btnTopeRetiros.addEventListener('click', () => {
-  cargarTopes();
-  modalBootstrap.show();
+// Cerrar el dropdown si se hace click fuera del input o dropdown
+document.addEventListener('click', (e) => {
+  if (!montoInput.contains(e.target) && !montoDropdown.contains(e.target)) {
+    montoDropdown.classList.add('hidden');
+  }
 });
 
 
+const db = firebase.database();
 
-  // Evento botón Mensaje Bienvenida con lógica para no repetir mensaje seguido
-  let ultimoIndiceBienvenida = -1;
-  if (btnMensajeBienvenida) {
-    btnMensajeBienvenida.addEventListener('click', () => {
-      let nuevoIndice;
-      do {
-        nuevoIndice = Math.floor(Math.random() * mensajesBienvenida.length);
-      } while (nuevoIndice === ultimoIndiceBienvenida && mensajesBienvenida.length > 1);
-      ultimoIndiceBienvenida = nuevoIndice;
+// Mostrar modal al hacer click en el botón principal
+document.getElementById("btn-descargar-retiros").addEventListener("click", () => {
+  document.getElementById("modal-turnos-retiros").classList.remove("hidden");
+});
 
-      const mensajeBienvenida = mensajesBienvenida[nuevoIndice];
-      navigator.clipboard.writeText(mensajeBienvenida).then(() => {
-        mostrarToast('✅ Mensaje de bienvenida copiado al portapapeles.');
-      }).catch(() => {
-        mostrarToast('❌ Error al copiar el mensaje de bienvenida.', false);
-      });
-    });
+// Cerrar modal
+document.getElementById("cerrar-modal-retiros").addEventListener("click", () => {
+  document.getElementById("modal-turnos-retiros").classList.add("hidden");
+});
+
+// Asignar evento a cada botón del turno dentro del modal
+document.querySelectorAll(".btn-turno-retiro").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const turnoKey = btn.dataset.turno;
+    document.getElementById("modal-turnos-retiros").classList.add("hidden");
+    await descargarRetirosPorTurno(turnoKey);
+  });
+});
+
+async function descargarRetirosPorTurno(turnoKey) {
+  try {
+    const snapshot = await db.ref("retiros").once("value");
+    const retirosData = snapshot.val();
+
+    if (!retirosData) {
+      alert("No hay retiros en la base de datos.");
+      return;
+    }
+
+    const retiros = Object.values(retirosData);
+    const retirosFiltrados = filtrarRetirosPorTurno(retiros, turnoKey);
+
+    if (retirosFiltrados.length === 0) {
+      alert("No hay retiros en este turno.");
+      return;
+    }
+
+    generarPDFRetiros(retirosFiltrados, turnoKey);
+  } catch (error) {
+    console.error("Error al obtener retiros:", error);
+    alert("Error al obtener retiros. Revisa la consola.");
   }
+}
+
+function filtrarRetirosPorTurno(retiros, turno) {
+  return retiros.filter((retiro) => {
+    const fechaObj = new Date(retiro.timestamp);
+    const hora = fechaObj.getHours();
+
+    if (turno === "02-10") {
+      return hora >= 2 && hora < 10;
+    } else if (turno === "10-18") {
+      return hora >= 10 && hora < 18;
+    } else if (turno === "18-02") {
+      return hora >= 18 || hora < 2;
+    }
+    return false;
+  });
+}
+
+function generarPDFRetiros(retiros, turno) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(14);
+  doc.text("Reporte de Retiros", 10, 10);
+  doc.setFontSize(11);
+  doc.text(`Turno: ${turno}`, 10, 18);
+
+  // Encabezados
+  doc.setFontSize(12);
+  doc.text("Usuario", 10, 28);
+  doc.text("Monto", 70, 28);
+
+  let y = 36;
+  let total = 0;
+
+  retiros.forEach((retiro) => {
+    if (y > 280) {
+      doc.addPage();
+      y = 20;
+    }
+
+    doc.setFontSize(10);
+    doc.text(retiro.usuario, 10, y);
+    doc.text(`$${retiro.monto.toLocaleString()}`, 70, y);
+    y += 8;
+
+    total += Number(retiro.monto);
+  });
+
+  // Mostrar total
+  if (y > 280) {
+    doc.addPage();
+    y = 20;
+  }
+
+  doc.setFontSize(12);
+  doc.text("Total:", 10, y + 10);
+  doc.text(`$${total.toLocaleString()}`, 70, y + 10);
+
+  doc.save(`retiros_${turno.replace("-", "_")}.pdf`);
+}
+
+// Modo oscuro toggle
+const btnModoOscuro = document.getElementById('btn-modo-oscuro');
+const body = document.body;
+
+// Cargar estado guardado en localStorage (si existe)
+if (localStorage.getItem('modoOscuro') === 'true') {
+  body.classList.add('modo-oscuro');
+}
+
+btnModoOscuro.addEventListener('click', () => {
+  body.classList.toggle('modo-oscuro');
+  // Guardar estado
+  const modoOscuroActivo = body.classList.contains('modo-oscuro');
+  localStorage.setItem('modoOscuro', modoOscuroActivo);
+});
+
+// Funciones que reciben el usuario y devuelven el mensaje
+  const mensajesReferidos = [
+    (usuario) => 
+`🎉 ¡Sumate a nuestro programa de referidos y llevate fichas gratis!
+
+Por cada amigo que invites y haga su primera carga, te regalamos 3000 fichas para usar en tu próxima recarga 🎰🎁
+
+Solo pediles que mencionen tu nombre de usuario "${usuario}" al cargar para que puedas recibir la bonificación ☘️
+
+El bono se activa después de la carga inicial del referido y se suma en tu siguiente recarga.
+
+Recordanos tus referidos al cargar para que te acreditemos el premio.
+
+Las bonificaciones son solo para jugar, no se pueden retirar.`,
+
+    (usuario) =>
+`🎉 ¡Invitá a tus amigos y ganá fichas gratis con nuestro plan de referidos!
+
+Cada amigo que venga de tu parte y realice su primera carga te suma 3000 fichas extras para tu próxima recarga 🎰🎁
+
+Solo asegurate que digan tu nombre de usuario "${usuario}" al hacer la carga para acreditarte el bono ☘️
+
+La bonificación se acredita luego de la primera carga del referido y se suma a tu siguiente recarga.
+
+No olvides avisarnos quiénes son tus referidos al momento de cargar para sumar el bono.
+
+Las fichas del bono solo pueden usarse para jugar, no para retirar.`,
+
+    (usuario) =>
+`🎉 ¡Sumá fichas gratis invitando amigos con nuestro plan de referidos!
+
+Por cada amigo que invites y realice su primer depósito, recibís 3000 fichas para usar en tu próxima carga 🎰🎁
+
+Pídanle que mencionen tu usuario "${usuario}" para poder acreditar la bonificación ☘️
+
+El bono se aplica luego de la primera carga del referido y se acumula en tu siguiente recarga.
+
+Recordanos tus referidos cuando hagas tu carga para agregar el bono.
+
+Las bonificaciones son para jugar, no para retirar.`
+  ];
+
+  const boton = document.getElementById('btn-info-referidos');
+  const toast = document.getElementById('toast');
+
+  // Cambiá este valor por el nombre de usuario real que quieras insertar
+  const nombreUsuario = "TuUsuario123";
+
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 6000);
+  }
+
+  boton.addEventListener('click', () => {
+    const indice = Math.floor(Math.random() * mensajesReferidos.length);
+    const mensaje = mensajesReferidos[indice](nombreUsuario);
+
+    navigator.clipboard.writeText(mensaje).then(() => {
+      showToast('Mensaje de referidos copiado al portapapeles!');
+    }).catch(err => {
+      showToast('Error al copiar el mensaje: ' + err);
+    });
+  });
+
+
+
+
+
+
 
 });
 
